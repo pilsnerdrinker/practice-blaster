@@ -1,11 +1,9 @@
 <!doctype html>
 <!-- practice-blaster v34: ensure hidden top problem summary is actually hidden -->
 <!-- practice-blaster v32: mode labels renamed to ギミック理解 / 位置確認 / 実戦練習 -->
-<!-- practice-blaster v20
+<!-- practice-blaster v37
 変更:
-- 上部の1回目/2回目突進表示を非表示
-- ノーマル見出し「ノーマル：まとめて回答」を非表示
-- 正解表示時も選択肢を緑/赤で表示
+- ギミック理解・位置確認では「次へ」ボタンを非表示
 -->
 <html lang="ja">
 <!-- practice-blaster v28: realtime prev problem + 3s result + realtime default + countdown cleanup -->
@@ -1223,9 +1221,11 @@
 
       const hideStandardActions = state.mode === "realtime";
       document.getElementById("prevBtn").style.display = "none";
-      ["checkBtn", "showBtn", "nextBtn", "newProblemBtn"].forEach((id) => {
-        document.getElementById(id).style.display = hideStandardActions ? "none" : "";
-      });
+      document.getElementById("checkBtn").style.display = hideStandardActions ? "none" : "";
+      document.getElementById("showBtn").style.display = hideStandardActions ? "none" : "";
+      document.getElementById("newProblemBtn").style.display = hideStandardActions ? "none" : "";
+      // ギミック理解・位置確認では「次へ」と「別の問題」が実質同じなので、次へは非表示。
+      document.getElementById("nextBtn").style.display = "none";
       document.getElementById("autoNextCheck").closest("label").style.display = hideStandardActions ? "none" : "";
 
       renderManualNumbers();
@@ -1603,6 +1603,5 @@
 
     newProblem();
   </script>
-  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "69e65a6b5ec64e5bb4b6a6c1c07c4667"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
