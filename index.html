@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- practice-blaster v34: ensure hidden top problem summary is actually hidden -->
 <!-- practice-blaster v32: mode labels renamed to ギミック理解 / 位置確認 / 実戦練習 -->
 <!-- practice-blaster v20
 変更:
@@ -32,6 +33,7 @@
     }
 
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -594,7 +596,7 @@
     <header>
       <div class="title">
         <h1>アルテマブラスター練習</h1>
-        <p>突進を見て、サイコロの並びと自分の立ち位置を判断する練習。</p>
+        <p>ボスの突進順から、サイコロの散開位置を判断する練習ページです。</p>
       </div>
       <div class="header-links">
         <a class="small-link" href="./README.md" target="_blank" rel="noreferrer">使い方・仕様（README）を見る</a>
@@ -616,7 +618,7 @@
         <span class="pill" id="myNumberPill">あなたは <strong id="myNumberText">1</strong> 番</span>
       </div>
       <div class="row number-buttons" id="manualNumbers"></div>
-      <div class="problem-summary" hidden>
+      <div class="problem-summary" id="topProblemSummary" hidden>
         <div class="summary-item">
           <div class="k">1回目突進</div>
           <div class="v" id="firstDashText">A → C</div>
@@ -883,6 +885,22 @@
         state.feedbackKind = "info";
       }
       if (state.rtPhase !== "result" && state.rtPhase !== "waiting") state.showSolution = false;
+      render();
+    }
+
+    function selectDice1(idx) {
+      state.answers.dice1 = idx;
+      state.showSolution = false;
+      state.feedback = `サイコロ1番：${pairLabels[idx]}を選択中。`;
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function selectFinal(idx) {
+      state.answers.final = idx;
+      state.showSolution = false;
+      state.feedback = `自分の立ち位置：${pairLabels[idx]}を選択中。`;
+      state.feedbackKind = "info";
       render();
     }
 
@@ -1204,7 +1222,8 @@
       document.getElementById("secondDashText").textContent = `${markers[sol.secondFrom]} → ${markers[sol.secondTo]}`;
 
       const hideStandardActions = state.mode === "realtime";
-      ["prevBtn", "checkBtn", "showBtn", "nextBtn", "newProblemBtn"].forEach((id) => {
+      document.getElementById("prevBtn").style.display = "none";
+      ["checkBtn", "showBtn", "nextBtn", "newProblemBtn"].forEach((id) => {
         document.getElementById(id).style.display = hideStandardActions ? "none" : "";
       });
       document.getElementById("autoNextCheck").closest("label").style.display = hideStandardActions ? "none" : "";
