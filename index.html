@@ -1,0 +1,1588 @@
+<!doctype html>
+<!-- practice-blaster v32: mode labels renamed to ギミック理解 / 位置確認 / 実戦練習 -->
+<!-- practice-blaster v20
+変更:
+- 上部の1回目/2回目突進表示を非表示
+- ノーマル見出し「ノーマル：まとめて回答」を非表示
+- 正解表示時も選択肢を緑/赤で表示
+-->
+<html lang="ja">
+<!-- practice-blaster v28: realtime prev problem + 3s result + realtime default + countdown cleanup -->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>アルテマブラスター練習</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141b33;
+      --panel2: #10172c;
+      --line: #2b365d;
+      --text: #f5f7ff;
+      --muted: #aeb9df;
+      --accent: #7dd3fc;
+      --accent2: #c084fc;
+      --good: #34d399;
+      --bad: #fb7185;
+      --warn: #fbbf24;
+      --marker: #e7ecff;
+      --red: #ff5b67;
+      --purple: #b66cff;
+      --blue: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #182447 0, var(--bg) 46rem);
+      color: var(--text);
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      width: min(1220px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 18px 0 34px;
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .title h1 {
+      margin: 0 0 4px;
+      font-size: clamp(24px, 3vw, 36px);
+      letter-spacing: 0.04em;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .header-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .small-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid #33406b;
+      background: rgba(16, 23, 44, 0.78);
+      border-radius: 999px;
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.85fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      background: rgba(20, 27, 51, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+
+    .field-card {
+      padding: 12px;
+    }
+
+    .control-card {
+      padding: 16px;
+    }
+
+    .top-controls {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .top-controls-bar {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+    }
+    .top-controls-bar .row {
+      width: 100%;
+    }
+    .top-controls-bar .number-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .top-controls-bar .problem-summary {
+      margin: 0;
+      width: 100%;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-right: 2px;
+    }
+
+    button, select {
+      color: var(--text);
+      background: #111a33;
+      border: 1px solid #3a4673;
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+
+    button:hover { background: #192344; border-color: #6172b8; }
+    button:active { transform: translateY(1px); }
+    button.active {
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      border-color: #93c5fd;
+    }
+    button.ghost { background: rgba(17, 24, 39, .35); }
+    button.good { background: rgba(16, 185, 129, .18); border-color: rgba(52, 211, 153, .9); }
+    button.bad { background: rgba(244, 63, 94, .18); border-color: rgba(251, 113, 133, .9); }
+    button.warn { background: rgba(251, 191, 36, .14); border-color: rgba(251, 191, 36, .75); }
+
+    button.correct-choice {
+      background: rgba(16, 185, 129, .22);
+      border-color: rgba(52, 211, 153, .95);
+      box-shadow: 0 0 0 2px rgba(52, 211, 153, .18);
+    }
+    button.wrong-choice {
+      background: rgba(244, 63, 94, .22);
+      border-color: rgba(251, 113, 133, .95);
+      box-shadow: 0 0 0 2px rgba(251, 113, 133, .18);
+    }
+
+    .mode-tabs button { min-width: 112px; }
+    .number-buttons button { min-width: 44px; padding-inline: 11px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #35426d;
+      background: #0f1730;
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill strong { color: #fff; font-size: 15px; }
+
+    .problem-summary {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 12px 0 14px;
+    }
+
+    .summary-item {
+      background: var(--panel2);
+      border: 1px solid #2c3862;
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .summary-item .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .summary-item .v {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .03em;
+    }
+
+    .step-title {
+      margin: 10px 0 6px;
+      font-size: 20px;
+    }
+
+    .hint {
+      margin: 8px 0 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(125, 211, 252, .09);
+      border: 1px solid rgba(125, 211, 252, .22);
+      color: #d7f3ff;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .quiz-block {
+      margin: 12px 0 16px;
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, .16);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, .34);
+    }
+
+    .quiz-block h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .quiz-block .hint {
+      margin: 6px 0 10px;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .choice-grid.positions {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .choice-grid button {
+      min-height: 42px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .check-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 8px 11px;
+      border: 1px solid #3a4673;
+      border-radius: 12px;
+      background: rgba(17, 24, 39, .35);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .realtime-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .realtime-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .realtime-controls button {
+      min-height: 42px;
+    }
+    .run-mode-buttons button {
+      min-width: 128px;
+    }
+    .rt-status {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr;
+      margin-top: 4px;
+    }
+    .rt-status-item {
+      background: var(--panel2);
+      border: 1px solid #2c3862;
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .rt-status-item .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .rt-status-item .v {
+      font-size: 17px;
+      font-weight: 900;
+    }
+    .rt-overlay-bg {
+      fill: rgba(3, 7, 18, .62);
+      stroke: rgba(226, 232, 240, .18);
+      stroke-width: 1.5;
+    }
+    .rt-overlay-main {
+      fill: #fff;
+      font-size: 64px;
+      font-weight: 1000;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: #020617;
+      stroke-width: 8px;
+    }
+    .rt-overlay-sub {
+      fill: #e0f2fe;
+      font-size: 24px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: #020617;
+      stroke-width: 5px;
+    }
+    .rt-overlay-sub.correct {
+      fill: #bbf7d0;
+    }
+    .rt-overlay-sub.wrong {
+      fill: #fecdd3;
+    }
+    .rt-ball {
+      fill: #ff7ad9;
+      stroke: rgba(255,255,255,.9);
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 9px rgba(255, 122, 217, .82));
+    }
+    .rt-ball,
+    .rt-overlay-bg,
+    .rt-overlay-main,
+    .rt-overlay-sub,
+    .rt-layer,
+    .rt-layer *,
+    .timebar-layer,
+    .timebar-layer *,
+    .map-dice-badge,
+    .marker-text,
+    .dash-label {
+      pointer-events: none;
+    }
+    .pos-hit {
+      pointer-events: all;
+      cursor: pointer;
+    }
+    .pos-hit .pos-circle,
+    .pos-hit .pos-hit-area {
+      pointer-events: all;
+    }
+    .pos-hit-area {
+      fill: transparent;
+      stroke: none;
+    }
+    .timebar-bg {
+      fill: rgba(15, 23, 42, .82);
+      stroke: rgba(226, 232, 240, .32);
+      stroke-width: 1.5;
+    }
+    .timebar-fill {
+      fill: rgba(251, 191, 36, .92);
+    }
+    .timebar-text {
+      fill: #fff7ed;
+      font-size: 16px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: #020617;
+      stroke-width: 4px;
+    }
+
+    .feedback {
+      min-height: 32px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, .68);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .feedback.correct { color: #bbf7d0; border-color: rgba(52, 211, 153, .55); background: rgba(16, 185, 129, .10); }
+    .feedback.wrong { color: #fecdd3; border-color: rgba(251, 113, 133, .55); background: rgba(244, 63, 94, .10); }
+    .feedback.info { color: #e0f2fe; border-color: rgba(125, 211, 252, .45); background: rgba(14, 165, 233, .10); }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, .45);
+      border: 1px solid rgba(148, 163, 184, .12);
+      border-radius: 12px;
+      padding: 8px 9px;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 6px;
+      border-radius: 99px;
+      display: inline-block;
+    }
+    .swatch.red { background: var(--red); height: 8px; }
+    .swatch.purple { background: var(--purple); height: 5px; }
+    .swatch.blue { background: var(--warn); width: 14px; height: 14px; border-radius: 50%; }
+    .swatch.green { background: var(--good); width: 14px; height: 14px; border-radius: 50%; }
+
+    .svg-wrap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: min(72vh, 720px);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #070d1b;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .gridline { stroke: #223052; stroke-width: 1; pointer-events: none; }
+    .arena { fill: rgba(30, 41, 76, .58); stroke: #8c9ac4; stroke-width: 2.2; }
+    .marker-text {
+      fill: var(--marker);
+      font-size: 28px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: #0b1020;
+      stroke-width: 4px;
+    }
+    .marker-ring { fill: rgba(15,23,42,.8); stroke: rgba(231,236,255,.65); stroke-width: 2; }
+    .marker-ring.first-from { stroke: var(--red); stroke-width: 5; fill: rgba(255, 91, 103, .14); }
+    .marker-ring.first-to { stroke: var(--warn); stroke-width: 5; fill: rgba(251, 191, 36, .16); }
+    .marker-ring.second-from { stroke: var(--purple); stroke-width: 4; fill: rgba(182, 108, 255, .14); }
+
+    .dash1 { stroke: var(--red); stroke-width: 13; stroke-linecap: round; opacity: .92; filter: drop-shadow(0 0 6px rgba(255,91,103,.55)); }
+    .dash2 { stroke: var(--purple); stroke-width: 7; stroke-linecap: round; opacity: .9; stroke-dasharray: 10 8; filter: drop-shadow(0 0 5px rgba(182,108,255,.45)); }
+    .dash-label {
+      font-size: 20px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      fill: #fff;
+      paint-order: stroke;
+      stroke: #0b1020;
+      stroke-width: 5px;
+    }
+
+    .pos-hit {
+      cursor: pointer;
+    }
+    .pos-circle {
+      fill: rgba(96, 165, 250, .16);
+      stroke: rgba(147, 197, 253, .85);
+      stroke-width: 2.2;
+      transition: fill .15s ease, stroke-width .15s ease;
+    }
+    .pos-hit:hover .pos-circle { fill: rgba(96, 165, 250, .33); stroke-width: 3; }
+    .pos-hit.selected .pos-circle { fill: rgba(251, 191, 36, .38); stroke: #fde68a; stroke-width: 4; }
+    .pos-hit.correct .pos-circle { fill: rgba(52, 211, 153, .65); stroke: #bbf7d0; stroke-width: 4; }
+    .pos-hit.wrong .pos-circle { fill: rgba(251, 113, 133, .52); stroke: #fecdd3; stroke-width: 4; }
+    .pos-label {
+      fill: #f8fbff;
+      font-size: 13px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      paint-order: stroke;
+      stroke: #071022;
+      stroke-width: 4px;
+    }
+    .dice-num {
+      fill: #04111f;
+      font-size: 19px;
+      font-weight: 1000;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+    .map-dice-badge rect {
+      fill: rgba(15, 23, 42, .70);
+      stroke: rgba(125, 211, 252, .34);
+      stroke-width: 1.8;
+    }
+    .map-dice-dot {
+      filter: drop-shadow(0 0 5px rgba(255,255,255,.28));
+    }
+    .map-dice-dot.blue {
+      fill: #5b7cff;
+      stroke: rgba(190, 215, 255, .9);
+      stroke-width: 1.2;
+    }
+    .map-dice-dot.red {
+      fill: #ff334c;
+      stroke: rgba(255, 210, 220, .9);
+      stroke-width: 1.2;
+    }
+
+    .solution-path {
+      fill: none;
+      stroke: rgba(52, 211, 153, .38);
+      stroke-width: 3;
+      stroke-dasharray: 7 7;
+    }
+
+    .mobile-note { display: none; color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+      .header-links { justify-content: flex-start; }
+      .svg-wrap { max-height: none; }
+      .choice-grid.positions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .problem-summary { grid-template-columns: 1fr; }
+      .top-controls-bar .problem-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .top-controls-bar .summary-item { min-width: 0; }
+    }
+
+    @media (max-width: 520px) {
+      .app { width: min(100vw - 12px, 1220px); padding-top: 8px; }
+      .field-card, .control-card { padding: 10px; border-radius: 14px; }
+      .choice-grid { grid-template-columns: 1fr; }
+      .legend { grid-template-columns: 1fr; }
+      .mobile-note { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>アルテマブラスター練習</h1>
+        <p>1回目・2回目の突進から、サイコロの並びと自分の立ち位置を判断する練習。</p>
+      </div>
+      <div class="header-links">
+        <a class="small-link" href="./README.md" target="_blank" rel="noreferrer">使い方・仕様（README）を見る</a>
+        <span class="small-link">他の練習ページ：<a href="https://pilsnerdrinker.github.io/raidshelf/" target="_blank" rel="noreferrer">raidshelf</a></span>
+      </div>
+    </header>
+
+    <div class="card control-card top-controls-bar">
+      <div class="row mode-tabs">
+        <span class="label">モード</span>
+        <button id="modeNormal" type="button">ギミック理解</button>
+        <button id="modeHard" type="button">位置確認</button>
+        <button id="modeRealtime" type="button">実戦練習</button>
+      </div>
+      <div class="row">
+        <span class="label">番号</span>
+        <button id="numRandom" type="button">ランダム</button>
+        <button id="numManual" type="button">自分で選ぶ</button>
+        <span class="pill" id="myNumberPill">あなたは <strong id="myNumberText">1</strong> 番</span>
+      </div>
+      <div class="row number-buttons" id="manualNumbers"></div>
+      <div class="problem-summary" hidden>
+        <div class="summary-item">
+          <div class="k">1回目突進</div>
+          <div class="v" id="firstDashText">A → C</div>
+        </div>
+        <div class="summary-item">
+          <div class="k">2回目突進</div>
+          <div class="v" id="secondDashText">1 → 3</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="card field-card">
+        <div class="svg-wrap" id="fieldWrap"></div>
+        <div class="mobile-note">マップ上の「A-1間」などの丸をタップして回答できます。</div>
+        <div class="legend">
+          <span id="legendDash1"><i class="swatch red"></i>1回目突進：太い矢印</span>
+          <span id="legendDash2"><i class="swatch purple"></i>2回目突進：細い矢印</span>
+          <span><i class="swatch blue"></i>選択中</span>
+          <span><i class="swatch green"></i>正解表示</span>
+        </div>
+      </section>
+
+      <section class="card control-card">
+        <div id="quizArea"></div>
+
+        <div class="actions">
+          <button class="ghost" id="prevBtn" type="button">前へ</button>
+          <button class="good" id="checkBtn" type="button">判定</button>
+          <button class="warn" id="showBtn" type="button">正解を表示</button>
+          <button class="active" id="nextBtn" type="button">次へ</button>
+          <button class="ghost" id="newProblemBtn" type="button">別の問題</button>
+          <label class="check-toggle"><input id="autoNextCheck" type="checkbox" />正解したらそのまま次へ</label>
+        </div>
+        <div id="feedback" class="feedback">問題を確認して回答してください。</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const markers = ["A", "1", "B", "2", "C", "3", "D", "4"];
+    const pairLabels = markers.map((m, i) => `${m}-${markers[(i + 1) % 8]}間`);
+    const center = 300;
+    const markerR = 250;
+    const markerCircleR = 224;
+    const pairR = 213;
+    const pairLabelR = 189;
+    const arenaR = 238;
+
+    const state = {
+      mode: "realtime",
+      numberMode: "random",
+      manualNumber: 1,
+      myNumber: 1,
+      firstFrom: 0,
+      kefkaDir: "cw",
+      step: 1,
+      answers: { direction: null, dice1: null, final: null },
+      hardSelected: null,
+      showSolution: false,
+      autoNext: false,
+      rtRunMode: "continuous",
+      rtPhase: "idle",
+      rtPaused: false,
+      rtPhaseStart: 0,
+      rtPhaseDuration: 0,
+      rtPausedAt: 0,
+      rtDashIndex: 0,
+      rtSelected: null,
+      rtShowDice: false,
+      rtDiceShowAt: 0,
+      rtAttackAt: 0,
+      rtCountdownResult: "",
+      rtCountdownKind: "",
+      rtResultText: "",
+      rtResultKind: "",
+      feedback: "問題を確認してください。",
+      feedbackKind: "",
+      problemCount: 0,
+      previousProblem: null
+    };
+
+    // ---- 実践モード ループ管理（setIntervalで確実にpause可能）----
+    let rtIntervalId = null;
+
+    function rtStop() {
+      if (rtIntervalId !== null) { clearInterval(rtIntervalId); rtIntervalId = null; }
+    }
+    function rtStart() {
+      rtStop();
+      rtIntervalId = setInterval(rtTick, 16);
+    }
+    function rtTick() {
+      if (state.mode !== "realtime" || state.rtPaused) return;
+      const now = performance.now();
+      rtAdvance(now);
+      renderField(solution());
+    }
+
+    const mod = (n) => (n % 8 + 8) % 8;
+    const randInt = (max) => Math.floor(Math.random() * max);
+    const dirStep = (dir) => dir === "cw" ? 1 : -1;
+    const opposite = (i) => mod(i + 4);
+
+    function pForMarker(i, r) {
+      const rad = (-90 + i * 45) * Math.PI / 180;
+      return { x: center + Math.cos(rad) * r, y: center + Math.sin(rad) * r };
+    }
+
+    function pForPair(i, r) {
+      const rad = (-90 + 22.5 + i * 45) * Math.PI / 180;
+      return { x: center + Math.cos(rad) * r, y: center + Math.sin(rad) * r };
+    }
+
+    function newProblem(message, kind) {
+      state.problemCount += 1;
+      state.firstFrom = randInt(8);
+      state.kefkaDir = Math.random() < 0.5 ? "cw" : "ccw";
+      state.myNumber = state.numberMode === "random" ? randInt(8) + 1 : state.manualNumber;
+      resetAnswers();
+      rtStop();
+      state.rtPhase = "idle";
+      state.rtPaused = false;
+      state.rtShowDice = false;
+      state.rtSelected = null;
+      state.rtCountdownResult = "";
+      state.rtCountdownKind = "";
+      state.feedback = message || "問題を確認してください。";
+      state.feedbackKind = kind || "";
+      render();
+    }
+
+    function resetAnswers() {
+      state.step = 1;
+      state.answers = { direction: null, dice1: null, final: null };
+      state.hardSelected = null;
+      state.rtSelected = null;
+      state.showSolution = false;
+    }
+
+    function currentProblemSnapshot() {
+      return {
+        firstFrom: state.firstFrom,
+        kefkaDir: state.kefkaDir,
+        myNumber: state.myNumber
+      };
+    }
+
+    function restoreProblem(snapshot) {
+      if (!snapshot) return false;
+      state.firstFrom = snapshot.firstFrom;
+      state.kefkaDir = snapshot.kefkaDir;
+      state.myNumber = snapshot.myNumber;
+      resetAnswers();
+      return true;
+    }
+
+    function generateProblemOnly() {
+      if (state.problemCount > 0) {
+        state.previousProblem = currentProblemSnapshot();
+      }
+      state.problemCount += 1;
+      state.firstFrom = randInt(8);
+      state.kefkaDir = Math.random() < 0.5 ? "cw" : "ccw";
+      state.myNumber = state.numberMode === "random" ? randInt(8) + 1 : state.manualNumber;
+      resetAnswers();
+    }
+
+    function solution() {
+      const firstTo = opposite(state.firstFrom);
+      const secondFrom = mod(state.firstFrom + dirStep(state.kefkaDir));
+      const secondTo = opposite(secondFrom);
+      const diceDir = state.kefkaDir === "cw" ? "ccw" : "cw";
+      const diceStep = dirStep(diceDir);
+      const dice1 = diceDir === "cw" ? firstTo : mod(firstTo - 1);
+      const final = mod(dice1 + (state.myNumber - 1) * diceStep);
+      return { firstTo, secondFrom, secondTo, diceDir, diceStep, dice1, final };
+    }
+
+    function dirName(dir) {
+      return dir === "cw" ? "時計回り" : "反時計回り";
+    }
+
+    function setMode(mode) {
+      if (state.mode === "realtime" && mode !== "realtime") {
+        rtStop();
+        state.rtPhase = "idle";
+        state.rtPaused = false;
+      }
+      state.mode = mode;
+      resetAnswers();
+      state.feedback =
+        mode === "normal" ? "ギミック理解：仕組みを確認しながら回答します。" :
+        mode === "hard" ? "位置確認：自分の立ち位置を直接選びます。" :
+        "実戦練習：スタートを押すと3カウント後に突進が始まります。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function setNumberMode(mode) {
+      state.numberMode = mode;
+      if (mode === "random") {
+        state.myNumber = randInt(8) + 1;
+      } else {
+        state.myNumber = state.manualNumber;
+      }
+      state.answers.final = null;
+      state.hardSelected = null;
+      state.rtSelected = null;
+      state.showSolution = false;
+      state.feedback = mode === "random" ? "番号をランダムにしました。次の問題でもランダムになります。" : "練習したい番号を選んでください。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function setManualNumber(n) {
+      state.manualNumber = n;
+      state.numberMode = "manual";
+      state.myNumber = n;
+      state.answers.final = null;
+      state.hardSelected = null;
+      state.rtSelected = null;
+      state.showSolution = false;
+      state.feedback = `${n}番で練習します。`;
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function selectDirection(dir) {
+      state.answers.direction = dir;
+      state.showSolution = false;
+      state.feedback = `${dirName(dir)}を選択中。`;
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function selectPair(idx) {
+      if (state.mode === "realtime") {
+        if (!state.rtShowDice && state.rtPhase !== "scatter" && state.rtPhase !== "result" && state.rtPhase !== "waiting") {
+          state.feedback = "サイコロが表示されてから立ち位置を選んでください。";
+          state.feedbackKind = "info";
+        } else if (state.rtPhase === "result" || state.rtPhase === "waiting") {
+          state.feedback = "判定後です。「次の問題」または「同じ問題をもう一度」を押してください。";
+          state.feedbackKind = "info";
+        } else {
+          state.rtSelected = idx;
+          state.feedback = `${pairLabels[idx]}を選択中。`;
+          state.feedbackKind = "info";
+        }
+      } else if (state.mode === "hard") {
+        state.hardSelected = idx;
+        state.feedback = `${pairLabels[idx]}を選択中。`;
+        state.feedbackKind = "info";
+      } else if (state.step === 2) {
+        state.answers.dice1 = idx;
+        state.feedback = `サイコロ1番：${pairLabels[idx]}を選択中。`;
+        state.feedbackKind = "info";
+      } else if (state.step === 3) {
+        state.answers.final = idx;
+        state.feedback = `自分の立ち位置：${pairLabels[idx]}を選択中。`;
+        state.feedbackKind = "info";
+      } else {
+        state.feedback = "Step 1では、右側のボタンでケフカの回転方向を選んでください。";
+        state.feedbackKind = "info";
+      }
+      if (state.rtPhase !== "result" && state.rtPhase !== "waiting") state.showSolution = false;
+      render();
+    }
+
+    function currentAnswerValue() {
+      if (state.mode === "realtime") return state.rtSelected;
+      if (state.mode === "hard") return state.hardSelected;
+      if (state.step === 1) return state.answers.direction;
+      if (state.step === 2) return state.answers.dice1;
+      return state.answers.final;
+    }
+
+    function currentCorrectValue() {
+      const sol = solution();
+      if (state.mode === "realtime") return sol.final;
+      if (state.mode === "hard") return sol.final;
+      if (state.step === 1) return state.kefkaDir;
+      if (state.step === 2) return sol.dice1;
+      return sol.final;
+    }
+
+    function checkAnswer() {
+      const sol = solution();
+
+      if (state.mode === "realtime") {
+        rtJudge(performance.now());
+        return;
+      }
+
+      if (state.mode === "normal") {
+        const missing = [];
+        if (state.answers.direction === null) missing.push("ケフカの回転方向");
+        if (state.answers.dice1 === null) missing.push("サイコロ1番の位置");
+        if (state.answers.final === null) missing.push("自分の立ち位置");
+        if (missing.length) {
+          state.feedback = `未回答：${missing.join("、")} を選んでください。`;
+          state.feedbackKind = "wrong";
+          render();
+          return;
+        }
+
+        const ok = state.answers.direction === state.kefkaDir
+          && state.answers.dice1 === sol.dice1
+          && state.answers.final === sol.final;
+        if (ok && state.autoNext) {
+          newProblem("正解！別の問題に進みました。", "correct");
+          return;
+        }
+        state.showSolution = true;
+        state.feedback = ok
+          ? "正解！「次へ」で別の問題に進みます。"
+          : "不正解。赤があなたの選択、緑が正解です。";
+        state.feedbackKind = ok ? "correct" : "wrong";
+        render();
+        return;
+      }
+
+      const ans = state.hardSelected;
+      const corr = sol.final;
+      if (ans === null || ans === undefined) {
+        state.feedback = "まだ回答が選択されていません。";
+        state.feedbackKind = "wrong";
+        render();
+        return;
+      }
+      const ok = ans === corr;
+      if (ok && state.autoNext) {
+        newProblem("正解！別の問題に進みました。", "correct");
+        return;
+      }
+      state.showSolution = true;
+      state.feedback = ok ? "正解！「次へ」で次の問題に進みます。" : "不正解。赤があなたの選択、緑が正解です。";
+      state.feedbackKind = ok ? "correct" : "wrong";
+      render();
+    }
+
+    function showAnswer() {
+      const sol = solution();
+      state.showSolution = true;
+      state.feedback = `正解：ケフカ${dirName(state.kefkaDir)}、サイコロ${dirName(sol.diceDir)}。1番は${pairLabels[sol.dice1]}、あなた（${state.myNumber}番）は${pairLabels[sol.final]}です。「次へ」で別の問題に進めます。`;
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function resetAnswer() {
+      if (state.mode === "hard") {
+        state.hardSelected = null;
+      } else if (state.step === 1) {
+        state.answers.direction = null;
+      } else if (state.step === 2) {
+        state.answers.dice1 = null;
+      } else {
+        state.answers.final = null;
+      }
+      state.showSolution = false;
+      state.feedback = "回答をリセットしました。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function previous() {
+      state.feedback = state.mode === "normal"
+        ? "ギミック理解は全問を同時に表示しています。"
+        : "これ以上前には戻れません。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function advanceAfterCorrect() {
+      newProblem("正解！別の問題に進みました。", "correct");
+    }
+
+    // ---- 実践モード 関数群 ----
+    function setRtPhase(phase, duration, now) {
+      state.rtPhase = phase;
+      state.rtPhaseStart = now;
+      state.rtPhaseDuration = duration;
+    }
+
+    function enterDash(index, now) {
+      state.rtDashIndex = index;
+      // 6回目突進（index=5）でサイコロ表示＆タイムバー開始。
+      // ここから「8回目突進終了 + 5秒」までを1本のバーで減らし続ける。
+      if (index === 5 && !state.rtShowDice) {
+        state.rtShowDice = true;
+        state.rtDiceShowAt = now;
+        // 6回目開始 → 6回目1秒 → 間0.5秒 → 7回目1秒 → 間0.5秒 → 8回目1秒 → 散会5秒 = 9秒
+        state.rtAttackAt = now + 9000;
+      }
+      setRtPhase("dash", 1000, now);
+    }
+
+    function rtAdvance(now) {
+      const elapsed = now - state.rtPhaseStart;
+      if (state.rtPhase === "countdown" && elapsed >= state.rtPhaseDuration) {
+        enterDash(0, now);
+      } else if (state.rtPhase === "dash" && elapsed >= state.rtPhaseDuration) {
+        if (state.rtDashIndex >= 7) {
+          // 8回目完了 → scatter（散会猶予）。rtAttackAtは6回目表示時に固定し、ここで増やさない。
+          // 保険として、もし未設定ならこの時点から5秒後に攻撃。
+          if (!state.rtShowDice || !state.rtAttackAt) {
+            state.rtShowDice = true;
+            state.rtDiceShowAt = now;
+            state.rtAttackAt = now + 5000;
+          }
+          setRtPhase("scatter", Math.max(1, state.rtAttackAt - now), now);
+        } else {
+          setRtPhase("between", 500, now);
+        }
+      } else if (state.rtPhase === "between" && elapsed >= state.rtPhaseDuration) {
+        enterDash(state.rtDashIndex + 1, now);
+      } else if (state.rtPhase === "scatter" && elapsed >= state.rtPhaseDuration) {
+        rtJudge(now);
+      } else if (state.rtPhase === "result" && elapsed >= state.rtPhaseDuration) {
+        if (state.rtRunMode === "continuous") {
+          startRealtime(false, state.rtResultText, state.rtResultKind);
+        } else {
+          state.rtPhase = "waiting";
+          state.feedback = "次の問題または同じ問題をもう一度を選んでください。";
+          state.feedbackKind = "info";
+          render();
+        }
+      }
+    }
+
+    function rtJudge(now) {
+      const sol = solution();
+      const ok = state.rtSelected === sol.final;
+      state.showSolution = true;
+      state.rtResultText = ok ? "正解！" : "不正解";
+      state.rtResultKind = ok ? "correct" : "wrong";
+      state.feedback = ok ? "正解！" : (state.rtSelected == null ? "時間切れ。不正解。" : "不正解。赤：選択、緑：正解。");
+      state.feedbackKind = state.rtResultKind;
+      setRtPhase("result", 3000, now);
+      render();
+    }
+
+    function startRealtime(useSameProblem, prevResultText, prevResultKind) {
+      rtStop();
+      state.mode = "realtime";
+      if (!useSameProblem) {
+        generateProblemOnly();
+      } else {
+        resetAnswers();
+      }
+      state.rtSelected = null;
+      state.rtShowDice = false;
+      state.rtDiceShowAt = 0;
+      state.rtAttackAt = 0;
+      state.rtDashIndex = 0;
+      state.rtPaused = false;
+      state.rtCountdownResult = prevResultText || "";
+      state.rtCountdownKind  = prevResultKind  || "";
+      state.rtResultText = "";
+      state.rtResultKind = "";
+      state.feedback = "3カウント後に開始します。";
+      state.feedbackKind = "info";
+      const now = performance.now();
+      setRtPhase("countdown", 3000, now);
+      rtStart();
+      render();
+    }
+
+    function togglePauseRealtime() {
+      const running = ["countdown","dash","between","scatter","result"].includes(state.rtPhase);
+      if (!running) {
+        state.feedback = "実行中の問題がありません。";
+        state.feedbackKind = "info";
+        render();
+        return;
+      }
+      const now = performance.now();
+      if (!state.rtPaused) {
+        // 一時停止：まずintervalを止めてからフラグ
+        rtStop();
+        state.rtPaused = true;
+        state.rtPausedAt = now;
+        state.feedback = "一時停止中。";
+        state.feedbackKind = "info";
+        render();
+      } else {
+        // 再開：停止していた時間分だけ全タイムスタンプをずらす
+        const delta = now - state.rtPausedAt;
+        state.rtPhaseStart += delta;
+        if (state.rtDiceShowAt) state.rtDiceShowAt += delta;
+        if (state.rtAttackAt)   state.rtAttackAt   += delta;
+        state.rtPaused = false;
+        state.feedback = "再開しました。";
+        state.feedbackKind = "info";
+        rtStart();
+        render();
+      }
+    }
+
+    function nextRealtimeProblem()  { startRealtime(false, "", ""); }
+    function retryRealtimeProblem() { startRealtime(true,  "", ""); }
+    function previousRealtimeProblem() {
+      if (!state.previousProblem) {
+        state.feedback = "戻れる前の問題がありません。";
+        state.feedbackKind = "info";
+        render();
+        return;
+      }
+      rtStop();
+      restoreProblem(state.previousProblem);
+      state.mode = "realtime";
+      state.rtSelected = null;
+      state.rtShowDice = false;
+      state.rtDiceShowAt = 0;
+      state.rtAttackAt = 0;
+      state.rtDashIndex = 0;
+      state.rtPaused = false;
+      state.rtCountdownResult = "";
+      state.rtCountdownKind = "";
+      state.rtResultText = "";
+      state.rtResultKind = "";
+      state.feedback = "1問前に戻りました。3カウント後に開始します。";
+      state.feedbackKind = "info";
+      const now = performance.now();
+      setRtPhase("countdown", 3000, now);
+      rtStart();
+      render();
+    }
+
+    function setRealtimeRunMode(mode) {
+      state.rtRunMode = mode;
+      state.feedback = mode === "continuous" ? "連続モード：判定後に自動で次の問題へ。" : "1問ごとモード：判定後に停止します。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function realtimeNow() {
+      return state.rtPaused ? state.rtPausedAt : performance.now();
+    }
+
+    function realtimeCountdownText() {
+      if (state.rtPhase !== "countdown") return "";
+      const remain = Math.max(0, state.rtPhaseDuration - (realtimeNow() - state.rtPhaseStart));
+      return String(Math.max(1, Math.ceil(remain / 1000)));
+    }
+
+    function realtimePhaseLabel() {
+      if (state.rtPaused) return "一時停止中";
+      const labels = { idle:"待機中", countdown:"3カウント", dash:`${state.rtDashIndex+1}回目突進`,
+        between:"突進間", scatter:"散開猶予", result:"判定表示", waiting:"次待ち" };
+      return labels[state.rtPhase] || "待機中";
+    }
+
+        function next() {
+      if (state.mode === "realtime") {
+        nextRealtimeProblem();
+      } else {
+        newProblem();
+      }
+    }
+
+    function toggleAutoNext(checked) {
+      state.autoNext = !!checked;
+      state.feedback = state.autoNext ? "正解したら自動で次へ進みます。" : "自動で次へ進む設定をオフにしました。";
+      state.feedbackKind = "info";
+      render();
+    }
+
+    function render() {
+      const sol = solution();
+      document.getElementById("modeNormal").classList.toggle("active", state.mode === "normal");
+      document.getElementById("modeHard").classList.toggle("active", state.mode === "hard");
+      document.getElementById("modeRealtime").classList.toggle("active", state.mode === "realtime");
+      document.getElementById("numRandom").classList.toggle("active", state.numberMode === "random");
+      document.getElementById("numManual").classList.toggle("active", state.numberMode === "manual");
+      document.getElementById("autoNextCheck").checked = state.autoNext;
+      document.getElementById("myNumberText").textContent = state.myNumber;
+      const myNumberPill = document.getElementById("myNumberPill");
+      if (myNumberPill) myNumberPill.style.display = state.mode === "realtime" ? "none" : "inline-flex";
+      ["legendDash1", "legendDash2"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = state.mode === "realtime" ? "none" : "inline-flex";
+      });
+      document.getElementById("firstDashText").textContent = `${markers[state.firstFrom]} → ${markers[sol.firstTo]}`;
+      document.getElementById("secondDashText").textContent = `${markers[sol.secondFrom]} → ${markers[sol.secondTo]}`;
+
+      const hideStandardActions = state.mode === "realtime";
+      ["prevBtn", "checkBtn", "showBtn", "nextBtn", "newProblemBtn"].forEach((id) => {
+        document.getElementById(id).style.display = hideStandardActions ? "none" : "";
+      });
+      document.getElementById("autoNextCheck").closest("label").style.display = hideStandardActions ? "none" : "";
+
+      renderManualNumbers();
+      renderQuizArea(sol);
+      renderFeedback();
+      renderField(sol);
+    }
+
+    function renderManualNumbers() {
+      const el = document.getElementById("manualNumbers");
+      el.innerHTML = Array.from({ length: 8 }, (_, i) => {
+        const n = i + 1;
+        const active = state.numberMode === "manual" && state.manualNumber === n ? " active" : "";
+        return `<button type="button" class="${active}" onclick="setManualNumber(${n})">${n}</button>`;
+      }).join("");
+    }
+
+    function normalChoiceClass(selectedValue, correctValue, value) {
+      if (state.showSolution) {
+        if (value === correctValue) return "correct-choice";
+        if (selectedValue === value && value !== correctValue) return "wrong-choice";
+      }
+      return selectedValue === value ? "active" : "";
+    }
+
+    function renderQuizArea(sol) {
+      const el = document.getElementById("quizArea");
+      if (state.mode === "realtime") {
+        el.innerHTML = `
+          <div class="realtime-panel">
+            <h2 class="step-title">実戦練習</h2>
+            <div class="hint">スタートするとマップ中央に3カウントが出て、ピンクの球が8回突進します。6回目でサイコロが表示されるので、時間切れまでにマップ上の立ち位置を選んでください。</div>
+            <div class="realtime-controls">
+              <button class="good" type="button" onclick="startRealtime(false)">スタート</button>
+              <button class="warn" type="button" onclick="checkAnswer()">判定</button>
+              <button class="ghost" type="button" onclick="togglePauseRealtime()">${state.rtPaused ? "再開" : "一時停止"}</button>
+              <button class="ghost" type="button" onclick="nextRealtimeProblem()">次の問題</button>
+              <button class="ghost" type="button" onclick="retryRealtimeProblem()">同じ問題をもう一度</button>
+              <button class="ghost" type="button" onclick="previousRealtimeProblem()">1問前に戻る</button>
+            </div>
+            <div class="realtime-controls run-mode-buttons">
+              <span class="label">進行</span>
+              <button type="button" class="${state.rtRunMode === "continuous" ? "active" : ""}" onclick="setRealtimeRunMode('continuous')">連続モード</button>
+              <button type="button" class="${state.rtRunMode === "single" ? "active" : ""}" onclick="setRealtimeRunMode('single')">1問ごとモード</button>
+            </div>
+            <div class="rt-status">
+              <div class="rt-status-item">
+                <div class="k">状態</div>
+                <div class="v">${realtimePhaseLabel()}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.mode === "hard") {
+        el.innerHTML = `
+          <h2 class="step-title">位置確認：正しい立ち位置を選ぶ</h2>
+          <div class="hint">1回目と2回目の突進だけを見て、あなたのサイコロ番号（${state.myNumber}番）の立ち位置をマップから選んでください。</div>
+        `;
+        return;
+      }
+
+      el.innerHTML = `
+        <div class="quiz-block">
+          <h3>問1：ケフカの回転方向</h3>
+          <div class="hint">1回目の出現マーカーから見て、2回目の出現マーカーがどちら側にずれたかを見ます。例：A→1なら時計回り、A→4なら反時計回り。</div>
+          <div class="choice-grid">
+            <button type="button" class="${normalChoiceClass(state.answers.direction, state.kefkaDir, "cw")}" onclick="selectDirection('cw')">時計回り</button>
+            <button type="button" class="${normalChoiceClass(state.answers.direction, state.kefkaDir, "ccw")}" onclick="selectDirection('ccw')">反時計回り</button>
+          </div>
+        </div>
+
+        <div class="quiz-block">
+          <h3>問2：サイコロ1番の位置</h3>
+          <div class="hint">サイコロはケフカと逆回り。1番は、1回目の到着先そのものではなく、到着先からサイコロ方向に見た次マーカーとの中間です。</div>
+          ${positionButtons(state.answers.dice1, "selectDice1", sol.dice1)}
+        </div>
+
+        <div class="quiz-block">
+          <h3>問3：自分の番号の立ち位置</h3>
+          <div class="hint">あなたは${state.myNumber}番です。サイコロ1番の位置から、サイコロの並び方向に数えてください。</div>
+          ${positionButtons(state.answers.final, "selectFinal", sol.final)}
+        </div>
+      `;
+    }
+
+    function positionButtons(selected, handler = "selectPair", correct = null) {
+      return `<div class="choice-grid positions">${pairLabels.map((label, idx) => {
+        let cls = "";
+        if (state.showSolution && correct !== null) {
+          if (idx === correct) cls = "correct-choice";
+          else if (selected === idx) cls = "wrong-choice";
+        } else if (selected === idx) {
+          cls = "active";
+        }
+        return `<button type="button" class="${cls}" onclick="${handler}(${idx})">${label}</button>`;
+      }).join("")}</div>`;
+    }
+
+    function renderFeedback() {
+      const el = document.getElementById("feedback");
+      el.className = `feedback ${state.feedbackKind || ""}`;
+      el.textContent = state.feedback;
+    }
+
+    // 1マス分のドット配置（中心0,0基準）
+    // 1〜4はそのまま使う。5〜8は「左半分」と「右半分」の2ピースを合成する。
+    const HALF = {
+      // 1の左半分 = 1そのもの（5の左側に使う）
+      1: [[0, 0]],
+      // 4の左半分 = 4そのもの（5右・7右・8左右に使う）
+      4: [[-12, -12], [12, -12], [-12, 12], [12, 12]],
+      // 3: 上頂点＋左下＋右下
+      "3up":  [[0, -13], [-14, 12], [14, 12]],
+      // 3を上下反転: 下頂点＋左上＋右上
+      "3dn":  [[0, 13],  [-14, -12], [14, -12]],
+    };
+
+    // 1ピース（幅44,高さ44相当）を左/右オフセットに並べてドット配列を生成
+    // ox: 右側ピースのx中心（左側は-ox）
+    function composeDots(leftDots, rightDots, ox) {
+      return [
+        ...leftDots.map(([x, y]) => [x - ox, y]),
+        ...rightDots.map(([x, y]) => [x + ox, y]),
+      ];
+    }
+
+    function diceDotPattern(n) {
+      const OX = 26; // 左右ピースの中心間オフセット
+      switch (n) {
+        case 1: return [[0, 0]];
+        case 2: return [[-13, 0], [13, 0]];
+        case 3: return HALF["3up"];
+        case 4: return HALF[4];
+        // 5 = 1（左）+ 4（右）
+        case 5: return composeDots(HALF[1], HALF[4], OX);
+        // 6 = 3up（左）+ 3dn（右）
+        case 6: return composeDots(HALF["3up"], HALF["3dn"], OX);
+        // 7 = 3up（左）+ 4（右）
+        case 7: return composeDots(HALF["3up"], HALF[4], OX);
+        // 8 = 4（左）+ 4（右）
+        case 8: return composeDots(HALF[4], HALF[4], OX);
+        default: return [[0, 0]];
+      }
+    }
+
+    function diceMarkSVG(n, cx, cy) {
+      const colorClass = n % 2 === 1 ? "blue" : "red";
+      const dots = diceDotPattern(n)
+        .map(([x, y]) => `<circle class="map-dice-dot ${colorClass}" cx="${cx + x}" cy="${cy + y}" r="7.5" />`)
+        .join("");
+      return `<g class="map-dice-mark">${dots}</g>`;
+    }
+
+    function renderField(sol) {
+      const isRealtime = state.mode === "realtime";
+      const selectedPair = isRealtime
+        ? state.rtSelected
+        : state.mode === "hard"
+          ? state.hardSelected
+          : state.answers.final !== null ? state.answers.final : state.answers.dice1;
+      const correctPair = (state.mode === "hard" || state.mode === "normal" || isRealtime) ? sol.final : null;
+      const wrongPair = state.showSolution && selectedPair !== null && selectedPair !== undefined && correctPair !== null && selectedPair !== correctPair ? selectedPair : null;
+
+      const firstStart = pForMarker(state.firstFrom, 218);
+      const firstEnd = pForMarker(sol.firstTo, 218);
+      const secondStart = pForMarker(sol.secondFrom, 192);
+      const secondEnd = pForMarker(sol.secondTo, 192);
+      const firstLabel = pointAlong(firstStart, firstEnd, 0.22, -28);
+      const secondLabel = pointAlong(secondStart, secondEnd, 0.78, 28);
+
+      const grid = [];
+      for (let x = 20; x <= 580; x += 70) grid.push(`<line class="gridline" x1="${x}" y1="10" x2="${x}" y2="590" />`);
+      for (let y = 20; y <= 580; y += 70) grid.push(`<line class="gridline" x1="10" y1="${y}" x2="590" y2="${y}" />`);
+
+      const markerEls = markers.map((m, i) => {
+        const p = pForMarker(i, markerR);
+        return `
+          <text class="marker-text" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}">${m}</text>
+        `;
+      }).join("");
+
+      // 正解表示時の緑の八角形ガイドは表示しない
+      const path = "";
+
+      const pairEls = pairLabels.map((label, idx) => {
+        const p = pForPair(idx, pairR);
+        const lp = pForPair(idx, pairLabelR);
+        let cls = "pos-hit";
+        if (selectedPair === idx) cls += " selected";
+        if (state.showSolution && correctPair === idx) cls += " correct";
+        if (state.showSolution && wrongPair === idx) cls += " wrong";
+
+        const diceNumber = state.showSolution ? diceNumberAtPair(idx, sol) : "";
+        const inner = diceNumber
+          ? `<circle class="pos-circle" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="20" /><text class="dice-num" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}">${diceNumber}</text>`
+          : `<circle class="pos-circle" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="16" />`;
+        return `
+          <g class="${cls}" data-pair-idx="${idx}">
+            <circle class="pos-hit-area" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="34" />
+            ${inner}
+            <text class="pos-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}">${label.replace("間", "")}</text>
+          </g>
+        `;
+      }).join("");
+
+      // line+polygon方式で矢印を描く関数
+      function arrowSVG(start, end, color, strokeWidth, headWidth, headLen, dashArray, glowColor) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const nx = -uy, ny = ux;
+        const bx = end.x - ux * headLen;
+        const by = end.y - uy * headLen;
+        const p1 = `${end.x.toFixed(1)},${end.y.toFixed(1)}`;
+        const p2 = `${(bx + nx * headWidth / 2).toFixed(1)},${(by + ny * headWidth / 2).toFixed(1)}`;
+        const p3 = `${(bx - nx * headWidth / 2).toFixed(1)},${(by - ny * headWidth / 2).toFixed(1)}`;
+        const dash = dashArray ? `stroke-dasharray="${dashArray}"` : "";
+        const glow = glowColor ? `filter="drop-shadow(0 0 6px ${glowColor})"` : "";
+        return `
+          <line x1="${start.x.toFixed(1)}" y1="${start.y.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}"
+            stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity=".92" ${dash} ${glow} />
+          <polygon points="${p1} ${p2} ${p3}" fill="${color}" opacity=".92" ${glow} />
+        `;
+      }
+
+      const arrow1 = arrowSVG(firstStart,  firstEnd,  "var(--red)",    13, 18, 28, null,   "rgba(255,91,103,.55)");
+      const arrow2 = arrowSVG(secondStart, secondEnd, "var(--purple)",  7, 14, 22, "10 8", "rgba(182,108,255,.45)");
+      const showStaticArrows = !isRealtime;
+
+      let realtimeBall = "";
+      if (isRealtime && (state.rtPhase === "dash" || state.rtPhase === "between")) {
+        const fromIdx = mod(state.firstFrom + state.rtDashIndex * dirStep(state.kefkaDir));
+        const toIdx = opposite(fromIdx);
+        const start = pForMarker(fromIdx, 218);
+        const end = pForMarker(toIdx, 218);
+        const now = realtimeNow();
+        const raw = state.rtPhase === "dash"
+          ? Math.min(1, Math.max(0, (now - state.rtPhaseStart) / state.rtPhaseDuration))
+          : 1;
+        const x = start.x + (end.x - start.x) * raw;
+        const y = start.y + (end.y - start.y) * raw;
+        realtimeBall = `<circle class="rt-ball" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" />`;
+      }
+
+      let timebar = "";
+      if (isRealtime && state.rtShowDice && state.rtDiceShowAt && state.rtAttackAt && !["result", "waiting", "idle", "countdown"].includes(state.rtPhase)) {
+        const now = realtimeNow();
+        const total = Math.max(1, state.rtAttackAt - state.rtDiceShowAt);
+        const remain = Math.max(0, state.rtAttackAt - now);
+        const ratio = Math.max(0, Math.min(1, remain / total));
+        const barX = 130;
+        const barY = 552;
+        const barW = 340;
+        const barH = 14;
+        timebar = `
+          <g class="timebar-layer">
+            <rect class="timebar-bg" x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="7" />
+            <rect class="timebar-fill" x="${barX}" y="${barY}" width="${(barW * ratio).toFixed(1)}" height="${barH}" rx="7" />
+          </g>
+        `;
+      }
+
+      let overlay = "";
+      if (isRealtime) {
+        if (state.rtPaused) {
+          overlay = `
+            <g class="rt-layer">
+              <rect class="rt-overlay-bg" pointer-events="none" x="185" y="240" width="230" height="100" rx="24" />
+              <text class="rt-overlay-sub" x="300" y="292">一時停止中</text>
+            </g>
+          `;
+        } else if (state.rtPhase === "countdown") {
+          const count = realtimeCountdownText();
+          overlay = `
+            <g class="rt-layer">
+              <rect class="rt-overlay-bg" pointer-events="none" x="205" y="225" width="190" height="150" rx="24" />
+              <text class="rt-overlay-main" x="300" y="300">${count}</text>
+            </g>
+          `;
+        } else if (state.rtPhase === "result" || state.rtPhase === "waiting") {
+          overlay = `
+            <g class="rt-layer">
+              <rect class="rt-overlay-bg" pointer-events="none" x="190" y="230" width="220" height="120" rx="24" />
+              <text class="rt-overlay-sub ${state.rtResultKind}" x="300" y="290">${state.rtResultText}</text>
+            </g>
+          `;
+        }
+      }
+
+      const showDiceBadge = !isRealtime || state.rtShowDice || state.showSolution || state.rtPhase === "result" || state.rtPhase === "waiting";
+      const diceBadge = showDiceBadge ? `
+          <g class="map-dice-badge">
+            <rect x="10" y="10" width="${state.myNumber >= 5 ? 118 : 74}" height="74" rx="14" />
+            ${diceMarkSVG(state.myNumber, state.myNumber >= 5 ? 69 : 47, 47)}
+          </g>
+      ` : "";
+
+      document.getElementById("fieldWrap").innerHTML = `
+        <svg viewBox="0 0 600 600" role="img" aria-label="アルテマブラスター練習用フィールド">
+          <rect x="0" y="0" width="600" height="600" fill="#070d1b" pointer-events="none" />
+          ${grid.join("")}
+          ${diceBadge}
+          <circle class="arena" cx="300" cy="300" r="${arenaR}" pointer-events="none" />
+          ${path}
+          ${showStaticArrows ? arrow1 : ""}
+          ${showStaticArrows ? arrow2 : ""}
+          ${showStaticArrows ? `<text class="dash-label" x="${firstLabel.x.toFixed(1)}" y="${firstLabel.y.toFixed(1)}">1回目</text>` : ""}
+          ${showStaticArrows ? `<text class="dash-label" x="${secondLabel.x.toFixed(1)}" y="${secondLabel.y.toFixed(1)}">2回目</text>` : ""}
+          ${realtimeBall}
+          ${timebar}
+          ${overlay}
+          ${markerEls}
+          ${pairEls}
+        </svg>
+      `;
+    }
+
+    function midpoint(a, b, offset) {
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      if (!offset) return { x: mx, y: my };
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: mx + (-dy / len) * offset, y: my + (dx / len) * offset };
+    }
+
+    function pointAlong(a, b, t, offset) {
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t;
+      if (!offset) return { x, y };
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: x + (-dy / len) * offset, y: y + (dx / len) * offset };
+    }
+
+    function diceNumberAtPair(idx, sol) {
+      for (let n = 0; n < 8; n += 1) {
+        if (mod(sol.dice1 + n * sol.diceStep) === idx) return n + 1;
+      }
+      return "";
+    }
+
+    document.getElementById("modeNormal").addEventListener("click", () => setMode("normal"));
+    document.getElementById("modeHard").addEventListener("click", () => setMode("hard"));
+    document.getElementById("modeRealtime").addEventListener("click", () => setMode("realtime"));
+    document.getElementById("numRandom").addEventListener("click", () => setNumberMode("random"));
+    document.getElementById("numManual").addEventListener("click", () => setNumberMode("manual"));
+    document.getElementById("prevBtn").addEventListener("click", previous);
+    document.getElementById("checkBtn").addEventListener("click", checkAnswer);
+    document.getElementById("showBtn").addEventListener("click", showAnswer);
+    document.getElementById("nextBtn").addEventListener("click", next);
+    document.getElementById("newProblemBtn").addEventListener("click", () => newProblem());
+    document.getElementById("autoNextCheck").addEventListener("change", (e) => toggleAutoNext(e.target.checked));
+
+    // SVG回答ボタンのイベントデリゲーション。
+    // 実戦モードではSVGを高頻度で再描画するため、clickではなくpointerdownで拾う。
+    document.getElementById("fieldWrap").addEventListener("pointerdown", function(e) {
+      let target = e.target;
+      while (target && target !== this) {
+        if (target.dataset && target.dataset.pairIdx !== undefined) {
+          e.preventDefault();
+          e.stopPropagation();
+          selectPair(Number(target.dataset.pairIdx));
+          return;
+        }
+        target = target.parentNode;
+      }
+    });
+
+    newProblem();
+  </script>
+</body>
+</html>
